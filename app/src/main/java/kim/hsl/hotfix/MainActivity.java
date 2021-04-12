@@ -45,8 +45,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void hotFix() {
         // 拷贝的目的文件目录
+        // /data/user/0/kim.hsl.hotfix/app_odex
         File targetDir = this.getDir("odex", Context.MODE_PRIVATE);
-        Log.i(TAG, "targetDir = " + targetDir);
         // 拷贝的目的文件名称
         String targetName = "update.dex";
 

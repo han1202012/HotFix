@@ -4,7 +4,7 @@ import android.util.Log;
 
 public class HotFixTest {
     public void test(){
-        if (false) {
+        if (true) {
             // 直接抛出异常
             throw new RuntimeException();
         }
