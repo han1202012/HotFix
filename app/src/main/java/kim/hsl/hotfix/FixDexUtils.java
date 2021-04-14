@@ -1,20 +1,16 @@
 package kim.hsl.hotfix;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.util.HashSet;
 
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
 public class FixDexUtils {
-
-    /**
-     * 存储已经加载的若干 Dex 文件
-     */
-    private static HashSet<File> mLoadedDexes = new HashSet<>();
 
     /**
      * 加载 Dex 文件
@@ -112,7 +108,7 @@ public class FixDexUtils {
 
                     // 获取系统的 PathClassLoader pathClassLoader 对象的
                     // private final DexPathList pathList 成员
-                    Object myPathListObject = myPathListField.get(pathClassLoader);
+                    Object myPathListObject = myPathListField.get(dexClassLoader);
 
                     // 获取 DexPathList 类
                     Class myPathListClass = myPathListObject.getClass();
@@ -135,6 +131,50 @@ public class FixDexUtils {
                     // 进行融合
                     // 将 myDexElementsObject 插入到 systemDexElementsObject
 
+                    // 获取 Dex 数组 , Element 类型无法引用 , 不是公开的
+                    // 首先获取 Element 类型
+                    // systemDexElementsObject
+                    Class<?> elementClass = systemDexElementsObject.getClass().getComponentType();
+
+                    // 获取两个 Element[] dexElements 数组的成员个数
+                    // 系统中的 PathClassLoader 中的 Element[] dexElements 数组大小
+                    int systemDexCount = Array.getLength(systemDexElementsObject);
+                    // 本应用中的 DexClassLoader 中的 Element[] dexElements 数组大小
+                    int myDexCount = Array.getLength(myDexElementsObject);
+
+                    Log.i("TAG", "systemDexCount = " + systemDexCount + " , myDexCount = " + myDexCount);
+
+                    // 重新创建一个数组
+                    // 类型 : Class<?> elementClass
+                    // 长度 : systemDexCount + myDexCount
+                    Object elementArray =
+                            Array.newInstance(elementClass, systemDexCount + myDexCount);
+
+                    // 填充数组内容, 这里特别注意 , 数组中的元素的顺序很重要 ,
+                    // 同样类型的类 , 在多个 Dex 都存在 , 如果在前面的 Dex 中查找到了 , 就不再向后查找了
+                    // 修复包的 Dex 要放在最前面 , 这样才能起到修复作用
+
+                    // 先放置修复包 Dex
+                    for(int i = 0; i < myDexCount; i ++){
+                        // 获取 myDexElementsObject 数组中的第 i 个元素
+                        // 放置到 elementArray 数组中的第 i 个元素位置
+                        Array.set(elementArray, i,
+                                Array.get(myDexElementsObject, i));
+                    }
+
+                    // 再放置系统 Dex
+                    for(int i = 0; i < systemDexCount; i ++){
+                        // 获取 systemDexElementsObject 数组中的第 i 个元素
+                        // 放置到 elementArray 数组中的第 i + myDexCount 个元素位置
+                        Array.set(elementArray,
+                                i + myDexCount,
+                                Array.get(systemDexElementsObject, i));
+                    }
+
+                    // 通过反射方法
+                    // 将合并后的 elementArray 数组放置到
+                    // PathClassLoader 中的 Element[] dexElements 中
+                    systemDexElementsField.set(systemPathListObject, elementArray);
 
 
 
@@ -145,11 +185,7 @@ public class FixDexUtils {
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
-
             }
         }
-
-
-
     }
 }

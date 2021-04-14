@@ -12,12 +12,36 @@ android {
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
+        // 维度版本号
+        flavorDimensions "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // 定义不同的开发和产品风格
+    productFlavors {
+        // 开发风格
+        dev {
+            // 开发时使用 minSDKVersion = 21 允许 Android Gradle 插件
+            // 为每个 Module 模块产生一个 APK 安装包 , 可以在 Android Lollipop 系统上进行测试
+            // 无需进行耗时的 dex 合并过程
+            minSdkVersion 21
+        }
+        // 产品风格
+        prod {
+            // 应用实际的最小 SDK
+            minSdkVersion 14
+        }
+    }
+
     buildTypes {
         release {
+            multiDexEnabled true
+
+            // 保留
+            multiDexKeepFile file("dex.keep")
+
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -39,4 +63,6 @@ dependencies {
 
     // 使用 Android X 的应用添加该依赖
     implementation 'pub.devrel:easypermissions:3.0.0'
+
+    implementation 'com.android.support:multidex:1.0.2'
 }

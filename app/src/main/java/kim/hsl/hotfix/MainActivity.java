@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // 进行后续操作
+            FixDexUtils.loadDex(this);
 
         } catch (IOException e) {
             e.printStackTrace();
